@@ -14,7 +14,7 @@ user = {
     "key" : STEAM_API_KEY,
     "steamid" : STEAM_ID,
 }
-print(STEAM_API_KEY is None, STEAM_ID is None)
+
 resposta = requests.get(urlwish, params=user, timeout=10)
 
 print(resposta.status_code) #200 = ok; 404 = perfil não encontrado; 429 = rate limit exceded
