@@ -2,8 +2,19 @@ import os
 from dotenv import load_dotenv
 import requests
 import time
+import json
 
-load_dotenv()
+PASTA = os.path.dirname(os.path.abspath(__file__))
+ARQUIVO_NOTIFICADOS = os.path.join(PASTA, "notificados.json")
+
+load_dotenv(os.path.join(PASTA, ".env"))
+#verifica se ja existe um json
+if os.path.exists(ARQUIVO_NOTIFICADOS):
+    with open(ARQUIVO_NOTIFICADOS, "r", encoding="utf-8") as f:
+        notificados = json.load(f)
+else:
+    notificados = {}
+
 STEAM_API_KEY = os.getenv("STEAM_API_KEY")
 STEAM_ID = os.getenv("STEAM_ID")
 DESCONTO_MINIMO = int(os.getenv("DESCONTO_MINIMO", "50"))
@@ -47,30 +58,41 @@ for appid_atual in lista_appid:
     except KeyError:
         print(f"Jogo com id :{appid_atual} sem preço, gratuito, não lançado ou indisponível")
         continue
+
     if preco["discount_percent"] >= DESCONTO_MINIMO:
-        promocoes.append({
-            "nome" : dados_preco[str(appid_atual)]['data']['name'],
-            "preco" : preco['final_formatted'],
-            "desconto": preco['discount_percent'],
-            "appid": appid_atual,
-        })
+        if str(appid_atual) not in notificados or preco['final'] < notificados[str(appid_atual)]:
+            promocoes.append({
+                "nome" : dados_preco[str(appid_atual)]['data']['name'],
+                "preco" : preco['final_formatted'],
+                "desconto": preco['discount_percent'],
+                "appid": appid_atual,
+                "precocomparavel": preco['final'],
+            })
+    else:
+         notificados.pop(str(appid_atual), None)
 if promocoes:
+    
     linhas = [
         f"**{jogo['nome']}**: {jogo['preco']} (-{jogo['desconto']}%)\n"
         f"<https://store.steampowered.com/app/{jogo['appid']}>"
         for jogo in promocoes
     ]
 
-    # blocos de 10 jogos por mensagem, por causa do limite de 2000 caracteres
-    for i in range(0, len(linhas), 10):
-        texto = "\n\n".join(linhas[i:i + 10])
+    for i in range(0, len(linhas), 5):
+        
+        texto = "\n\n".join(linhas[i:i + 5])
+        bloco = promocoes[i:i + 5]
         try:
-            resposta = requests.post(
-                DISCORD_WEBHOOK_URL, json={"content": texto}, timeout=10
-            )
+            resposta = requests.post(DISCORD_WEBHOOK_URL, json={"content": texto}, timeout=10)
             resposta.raise_for_status()
         except requests.RequestException:
             print("Falha ao enviar para o Discord.")
+        else:##se nao der except ele sobrescreve ou adiciona um novo
+           
+            for jogo in bloco:
+                notificados[str(jogo['appid'])] = jogo['precocomparavel']
+
         time.sleep(1)
-else:
-    print("Nenhum jogo em promoção.")
+
+with open(ARQUIVO_NOTIFICADOS, "w", encoding="utf-8") as f:
+    json.dump(notificados, f)

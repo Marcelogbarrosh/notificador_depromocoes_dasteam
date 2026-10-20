@@ -1,14 +1,22 @@
 # Notificador de Promoções da Steam
 
-Programa em Python que lê a sua lista de desejos da Steam, verifica o preço atual de cada jogo na loja brasileira e avisa no Discord quando algum estiver em promoção.
-
-> **Status:** em desenvolvimento. Hoje o programa já lê a wishlist e extrai os appids. A consulta de preços e o envio de avisos para o Discord estão sendo implementados.
+Programa em Python que lê a sua lista de desejos da Steam, verifica o preço de cada jogo na loja brasileira e avisa em um canal do Discord quando algum estiver em promoção.
 
 ## Como funciona
 
 1. Busca a sua wishlist pela Web API oficial da Steam.
 2. Consulta o preço e o desconto de cada jogo (loja do Brasil, em reais).
-3. Se o jogo estiver em promoção, envia um aviso para um canal do Discord via webhook.
+3. Seleciona os jogos cujo desconto é maior ou igual ao desconto mínimo que você definiu.
+4. Envia um aviso para o Discord via webhook, com nome, preço, desconto e link da loja.
+5. Guarda os jogos já avisados em `notificados.json`, para não repetir o aviso a cada execução.
+
+### Quando você é avisado
+
+- Quando um jogo da wishlist atinge o desconto mínimo pela primeira vez.
+- Quando um jogo já avisado fica ainda mais barato do que no último aviso.
+- Quando uma promoção termina e o jogo volta a entrar em promoção depois.
+
+Se a promoção acaba, o jogo é "esquecido" e você será avisado de novo quando ela voltar.
 
 ## Requisitos
 
@@ -50,13 +58,21 @@ Gere em <https://steamcommunity.com/dev/apikey>. No campo de domínio, pode usar
 
 ### 5. Arquivo `.env`
 
-Crie um arquivo chamado `.env` na pasta do projeto (use o `.env.example` como modelo):
+Copie o `.env.example` para `.env` e preencha:
 
 ```
 STEAM_API_KEY=sua_chave_aqui
 STEAM_ID=seu_steamid64_aqui
 DISCORD_WEBHOOK_URL=url_do_webhook_aqui
+DESCONTO_MINIMO=50
 ```
+
+| Variável | O que é |
+|---|---|
+| `STEAM_API_KEY` | Sua chave da Steam Web API |
+| `STEAM_ID` | Seu SteamID64 |
+| `DISCORD_WEBHOOK_URL` | URL do webhook do canal que receberá os avisos |
+| `DESCONTO_MINIMO` | Desconto mínimo (em %) para avisar. Padrão: 50 |
 
 Sem espaços em volta do `=`. **Nunca** suba o `.env` para o GitHub: ele contém segredos e já está listado no `.gitignore`.
 
@@ -66,10 +82,28 @@ Sem espaços em volta do `=`. **Nunca** suba o `.env` para o GitHub: ele contém
 py main.py
 ```
 
+Na primeira execução, você recebe todas as promoções atuais da sua wishlist. Nas seguintes, só as novidades.
+
+O programa consulta um jogo por vez, com pausa entre as requisições para respeitar o limite da Steam. Com uma wishlist grande, a execução pode levar alguns minutos.
+
+### Execução automática (Windows)
+
+Para rodar sozinho, use o **Agendador de Tarefas** do Windows, executando `main.py` uma ou duas vezes por dia. Configure a pasta do projeto no campo **"Iniciar em"**, para que o `.env` e o `notificados.json` sejam encontrados. Promoções da Steam duram dias, então não é necessário rodar com mais frequência.
+
+## Arquivos do projeto
+
+| Arquivo | Função |
+|---|---|
+| `main.py` | Programa principal |
+| `.env` | Suas chaves e configurações (não vai para o GitHub) |
+| `.env.example` | Modelo do `.env`, sem valores secretos |
+| `notificados.json` | Gerado pelo programa: jogos já avisados (não vai para o GitHub) |
+| `requirements.txt` | Dependências do projeto |
+
 ## Segurança
 
 - A chave da Steam e a URL do webhook são segredos. Guarde-as apenas no `.env`.
-- Se alguma delas vazar, gere uma nova (chave da Steam em steamcommunity.com/dev/apikey, webhook nas configurações do canal do Discord).
+- Se alguma delas vazar, gere uma nova (chave da Steam em steamcommunity.com/dev/apikey; webhook nas configurações do canal do Discord).
 
 ## Licença
 
