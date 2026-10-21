@@ -58,7 +58,7 @@ Gere em <https://steamcommunity.com/dev/apikey>. No campo de domínio, pode usar
 
 ### 5. Arquivo `.env`
 
-Copie o `.env.example` para `.env` e preencha:
+Copie o `.env.example` para `.env` (na mesma pasta do `main.py`) e preencha:
 
 ```
 STEAM_API_KEY=sua_chave_aqui
@@ -86,9 +86,32 @@ Na primeira execução, você recebe todas as promoções atuais da sua wishlist
 
 O programa consulta um jogo por vez, com pausa entre as requisições para respeitar o limite da Steam. Com uma wishlist grande, a execução pode levar alguns minutos.
 
-### Execução automática (Windows)
+O `.env` e o `notificados.json` ficam sempre na mesma pasta do `main.py`, não importa de onde o programa seja iniciado.
 
-Para rodar sozinho, use o **Agendador de Tarefas** do Windows, executando `main.py` uma ou duas vezes por dia. Configure a pasta do projeto no campo **"Iniciar em"**, para que o `.env` e o `notificados.json` sejam encontrados. Promoções da Steam duram dias, então não é necessário rodar com mais frequência.
+## Execução automática
+
+O programa roda uma vez e termina, então para receber avisos sem lembrar de executá-lo, agende-o no seu sistema. Uma ou duas vezes por dia é suficiente: as promoções da Steam duram dias, e consultas em excesso são limitadas pela Steam.
+
+O agendamento é configuração do seu computador e não faz parte do projeto: use o caminho do **seu** Python e da **sua** pasta do projeto. O computador precisa estar ligado no horário.
+
+### Windows (Agendador de Tarefas)
+
+1. Abra o **Agendador de Tarefas** (`Windows + R`, digite `taskschd.msc`) e clique em **Criar Tarefa Básica**.
+2. Gatilho: **Diariamente**, no horário desejado.
+3. Ação: **Iniciar um programa**, preenchendo:
+   - **Programa/script:** caminho completo do `python.exe` (para descobrir: `py -c "import sys; print(sys.executable)"`).
+   - **Adicione argumentos:** `main.py`
+   - **Iniciar em:** a pasta onde está o projeto, sem aspas.
+4. Em **Propriedades → Configurações**, marque a opção de executar o mais cedo possível caso o horário seja perdido (por exemplo, com o PC desligado).
+5. Para testar, clique com o botão direito na tarefa e escolha **Executar**.
+
+### Linux / macOS (cron)
+
+Rode `crontab -e` e adicione uma linha, ajustando os caminhos. Exemplo, todos os dias às 19h:
+
+```
+0 19 * * * /usr/bin/python3 /caminho/do/projeto/main.py
+```
 
 ## Arquivos do projeto
 
